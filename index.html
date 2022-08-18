@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Task manager</title>
+    <script src="script/core.js"></script>
+    <script src="node_modules/chart.js/dist/chart.js"></script>
+</head>
+
+<body>
+    <button onclick="startTimer(cpuInterval);startTimer(ramInterval);">Start</button>
+    <button onclick="endTimer(cpuInterval);endTimer(ramInterval);">End</button>
+    <div>
+        <canvas id="myCPUChart"></canvas>
+        <canvas id="myRAMChart"></canvas>
+    </div>
+    <script>
+        myCPUChart = initChart(document.getElementById('myCPUChart'));
+        myRAMChart = initChart2(document.getElementById('myRAMChart'));
+    </script>
+</body>
+
+</html>

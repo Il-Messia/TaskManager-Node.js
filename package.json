@@ -1,0 +1,10 @@
+{
+  "name": "task_manager",
+  "version": "0.0.1 - alpha",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "chart.js": "^3.9.1",
+    "os": "^0.1.2"
+  }
+}
