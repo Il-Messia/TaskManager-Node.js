@@ -1,77 +1,123 @@
+// Base requirements
 const http = require('http');
 const os = require('os');
 const fs = require('fs');
 
-const server = http.createServer((req, res) => {
+// Costants
+const port = 8882;
+const address = 'localhost';
 
+// Create the server
+const server = http.createServer((req, res) => {
+  // Analize the URL request
   switch (req.url) {
+    // These are the base URLs that load the base page
     case '/':
     case '/index.html':
     case '/home.html':
-      fs.readFile('index.html', 'utf8', (err, data) => {
-        res.statusCode = 200;
-        res.end(data);
-      });
+      loadFile('index.html', res);
       break;
-    case '/cpus':
+    // Request of the base core script
+    case '/script/core.js':
+      loadFile('.' + req.url, res);
+      break;
+    case '/node_modules/chart.js/dist/chart.js':
+      loadFile('.' + req.url, res);
+      break;
+    case '/js/uikit.min.js':
+      loadFile('.' + req.url, res);
+      break;
+    case '/js/uikit-icons.min.js':
+      loadFile('.' + req.url, res);
+      break;
+    case '/css/uikit.min.css':
+      loadFile('.' + req.url, res);
+      break;
+    // Request the CPUs info
+    case '/CPUs':
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
       res.end(getCpusInfo());
       break;
+    case '/CPUs/analitic':
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(getCpusInfo(true));
+      break;
+    // Request the RAM info
     case '/RAM':
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
       res.end(getRamInfo());
       break;
+    // Default request, try to send the file requested
     default:
-      try {
-        fs.readFile('.' + req.url, 'utf8', (err, data) => {
-          if (err != null) {
-            res.statusCode = 404;
-            res.end(JSON.stringify(err));
-          } else {
-            res.statusCode = 200;
-            res.end(data);
-          }
-        });
-      } catch (e) {
-      }
+      res.statusCode = 404;
+      res.end('Page not found');
       break;
   }
-
-
 });
 
-server.listen(8882, 'localhost', () => { console.log('Server started at http://localhost:8882'); });
+// Start the server
+server.listen(port,
+  address,
+  () => { console.log(`Server started at http://${address}:${port}`); });
 
 /**
- * Permette di ottenere le informazioni sulle
- * statistiche di utilizzo del processore
- * @param analitic permette di poter avere le informazioni
- *                  in modo analitico, per ogni core. 
- *                  Valore di default [false]
- * @return le informazioni richieste in formato JSON
-*/
+ * Allow to load a file and prepare the
+ * base information for the request
+ * @param {string} filePath the file path
+ * @param {Http.response} response allow to respond directly
+ * @returns the file content o the error
+ */
+function loadFile(filePath, response) {
+  try {
+    // Try to open the file
+    fs.readFile(filePath, 'utf8', (err, data) => {
+      // Check if there is an error
+      if (err != null) {
+        response.statusCode = 404;
+        response.end(JSON.stringify(err));
+      } else {
+        response.statusCode = 200;
+        response.end(data);
+      }
+    });
+  } catch (error) {
+    // Exception generated
+    response.statusCode = 404;
+    response.end(JSON.stringify(error));
+  }
+}
+
+/**
+ * Handles the CPUs info, it can have two behaviours:
+ * analitic = true => return information about every core
+ * analitic = false => return general information
+ * default behaviour => analitic = false
+ * @param {boolean} analitic 
+ * @returns CPUs info
+ */
 function getCpusInfo(analitic = false) {
-  // Ottengo le informazioni del processore
+  // Get the CPUs info
   var cpusInfo = os.cpus();
 
-  // Se vengono richieste le informazioni in modalità
-  // analitica ritorno subito  
+  // Analitic mode ON, there is anything
+  // to do, i can return now  
   if (analitic) {
     return JSON.stringify(cpusInfo);
   }
 
-  // Controllo comunque di avere informazioni
+  // A little check
   if (cpusInfo.length == 0) {
     return JSON.stringify(cpusInfo);
   }
 
-  // Variabile di template
+  // Template data structure
   var template = cpusInfo[0];
 
-  // ATTENZIONE: salto tranquillamente la prima 
-  //             in quanto l'ho già assegnata
+  // Skip the first row, we have already save the
+  // data in the template
   for (var i = 1; i < cpusInfo.length; ++i) {
     template.speed += cpusInfo[i].speed;
     template.times.idle += cpusInfo[i].times.idle;
@@ -81,7 +127,7 @@ function getCpusInfo(analitic = false) {
     template.times.user += cpusInfo[i].times.user;
   }
 
-  // Estraggo una media
+  // Calculate the average values
   template.speed /= cpusInfo.length;
   template.times.idle /= cpusInfo.length;
   template.times.irq /= cpusInfo.length;
@@ -94,9 +140,8 @@ function getCpusInfo(analitic = false) {
 }
 
 /**
- * Return RAM information like
- * usage and total amount
- * @return data in JSON format
+ * Handles the RAM info
+ * @returns the RAM info
  */
 function getRamInfo() {
   var result = { totalAmount: os.totalmem(), freeMemory: os.freemem() };

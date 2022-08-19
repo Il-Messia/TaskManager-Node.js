@@ -5,19 +5,81 @@
     <title>Task manager</title>
     <script src="script/core.js"></script>
     <script src="node_modules/chart.js/dist/chart.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/uikit.min.css" />
+    <script src="js/uikit.min.js"></script>
+    <script src="js/uikit-icons.min.js"></script>
 </head>
 
 <body>
-    <button onclick="startTimer(cpuInterval);startTimer(ramInterval);">Start</button>
-    <button onclick="endTimer(cpuInterval);endTimer(ramInterval);">End</button>
-    <div>
-        <canvas id="myCPUChart"></canvas>
-        <canvas id="myRAMChart"></canvas>
+    <div class="uk-light uk-background-secondary uk-padding">
+        <div class="uk-flex uk-flex-right">
+            <button class="uk-button uk-button-default" type="button" id="refreshButton">Refresh rate: 0.5s</button>
+            <div uk-dropdown="mode: click" class="uk-light uk-background-secondary">
+                <ul class="uk-nav uk-dropdown-nav">
+                    <li><a href="javascript:void(0)"
+                            onclick="refreshIntervalDuration(500, document.getElementById('refreshButton'));">0.5s</a>
+                    </li>
+                    <li class="uk-nav-divider"></li>
+                    <li><a href="javascript:void(0)"
+                            onclick="refreshIntervalDuration(1000, document.getElementById('refreshButton'));">1.0s</a>
+                    </li>
+                    <li class="uk-nav-divider"></li>
+                    <li><a href="javascript:void(0)"
+                            onclick="refreshIntervalDuration(1500, document.getElementById('refreshButton'));">1.5s</a>
+                    </li>
+                    <li class="uk-nav-divider"></li>
+                    <li><a href="javascript:void(0)"
+                            onclick="refreshIntervalDuration(2000, document.getElementById('refreshButton'));">2.0s</a>
+                    </li>
+                    <li class="uk-nav-divider"></li>
+                    <li><a href="javascript:void(0)"
+                            onclick="refreshIntervalDuration(2500, document.getElementById('refreshButton'));">2.5s</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="uk-child-width-1-2@s" uk-grid>
+            <div>
+                <canvas id="myCPUChart"></canvas>
+                <p id="cpuinfo">CPU: unknow</p>
+                <p id="cpuusage">Usage: -%</p>
+                <p id="cpuidle">Idle: -%</p>
+            </div>
+            <div>
+                <canvas id="myRAMChart"></canvas>
+                <p id="totalram">Total RAM: unknow</p>
+                <p id="usedram">Used RAM: -%</p>
+                <p id="freeram">Free RAM: -%</p>
+            </div>
+        </div>
+        <div class="uk-flex uk-flex-center">
+            <div class="uk-padding">
+
+                <button class="uk-button uk-button-default"
+                    onclick="startTimer(intervalsIndexes.cpu);startTimer(intervalsIndexes.ram);">Start</button>
+            </div>
+            <div class="uk-padding">
+
+                <button class="uk-button uk-button-default"
+                    onclick="endTimer(intervalsIndexes.cpu);endTimer(intervalsIndexes.ram);">Stop</button>
+            </div>
+        </div>
+        <script>
+            initChart(document.getElementById('myCPUChart'), cpuData);
+            initChart(document.getElementById('myRAMChart'), ramData);
+
+            cpuData.CPUInfoField = document.getElementById('cpuinfo');
+            cpuData.usageField = document.getElementById('cpuusage');
+            cpuData.idleField = document.getElementById('cpuidle');
+
+            ramData.totalRamField = document.getElementById('totalram');
+            ramData.usedRamField = document.getElementById('usedram');
+            ramData.freeRamField = document.getElementById('freeram');
+
+        </script>
     </div>
-    <script>
-        myCPUChart = initChart(document.getElementById('myCPUChart'));
-        myRAMChart = initChart2(document.getElementById('myRAMChart'));
-    </script>
 </body>
 
 </html>

@@ -1,145 +1,168 @@
-const cpuInterval = 0;
-const ramInterval = 1;
+// Costants
+const intervalsIndexes = {
+    cpu: 0,     // Index of the cpu interval
+    ram: 1,     // Index of the ram interval
+};
 
-const mesurementsLimit = 60;        // Numero massimo di misurazioni
+const mesurementsLimit = 30;    // Max number of mesurements
 
-var yCPUValue = new Array(mesurementsLimit);
-for (var i = 0; i < mesurementsLimit; ++i) {
-    yCPUValue[i] =0;
-}
+// Contains the CPU chart data
+var cpuData = {
+    chart: null,                                        // chart reference
+    xLabels: null,                                      // labels of x values
+    yValues: null,                                      // the y values
+    mesurements: null,                                  // list of CPU mesurements, CPU specific field
+    title: 'CPU usage',                                 // title of the chart
+    analitic: false,                                    // analitic cpus
+    backgroundColor: 'rgba(3, 169, 244, 0.3)',          // fill area color
+    borderColor: 'rgb(3, 169, 244)',                    // line color
+    CPUInfoField: null,                                 // field for display the CPU information
+    usageField: null,                                   // field for display CPU usage
+    idleField: null,                                    // field for display CPU idle
+};
 
-var yRAMValue = new Array(mesurementsLimit);
-for (var i = 0; i < mesurementsLimit; ++i) {
-    yRAMValue[i] =0;
-}
+// Contains the RAM chart data
+var ramData = {
+    chart: null,                                        // chart reference
+    xLabels: null,                                      // labels of x values
+    yValues: null,                                      // the y values
+    title: 'RAM usage',                                 // title of the chart
+    backgroundColor: 'rgba(255, 82, 82, 0.3)',          // fill area color
+    borderColor: 'rgb(255, 82, 82)',                    // line color
+    totalRamField: null,                                // field for display the total amount of RAM
+    usedRamField: null,                                 // field for display the current used RAM
+    freeRamField: null,                                 // field for display the current free RAM
+};
 
-var myCPUChart, myRAMChart;
-
-var intervals = [{ intervalId: null, timing: 1000, function: manageCpuData },{ intervalId: null, timing: 1000, function: manageRAMData }];
-
-
-
-function initChart(cavas) {
-    const labels = getLabel();
-    var data = {
-        labels: labels,
-        datasets: [{
-            label: 'CPU usage',
-            backgroundColor: 'rgba(75, 192, 192, 0.1)',
-            borderColor: 'rgb(75, 192, 192)',
-            data: yCPUValue,
-        }]
-    };
-
-    const config = {
-        type: 'line',
-
-        data: data,
-        options: {
-            fill: true,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }, x: {
-                    grid: {
-                        offset: true
-                    }
-                }
-
-            }
-        }
-    };
-    return new Chart(
-        cavas,
-        config
-    );
-}
-
-function initChart2(cavas) {
-    const labels = getLabel();
-    var data = {
-        labels: labels,
-        datasets: [{
-            label: 'RAM usage',
-            backgroundColor: 'rgba(61, 90, 254, 0.1)',
-            borderColor: 'rgb(61, 90, 254)',
-            data: yRAMValue,
-        }]
-    };
-
-    const config = {
-        type: 'line',
-
-        data: data,
-        options: {
-            fill: true,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }, x: {
-                    grid: {
-                        offset: true
-                    }
-                }
-
-            }
-        }
-    };
-    return new Chart(
-        cavas,
-        config
-    );
-}
+// List of iterval that allow to handle the start o the end of the refresh
+var intervals = [{ intervalId: null, timing: 500, function: manageCpuData },
+{ intervalId: null, timing: 500, function: manageRAMData }];
 
 /**
- * 
- *  GESTIONE CPU
- * 
+ * Start the interval for refreshing
+ * @param {number} index the index the interval 
  */
-
-
-var isFirstTime = true;             // Permette di comprendere se siamo alla prima chiamata
-var cpuMeasurements = null;         // Misurazioni registrate della CPU
-
-/**
- * Restituisce un array di misurazioni inizializzato 
-*/
-function resetCPUMeseraments() {
-    // Istanzio l'array
-    var array = new Array(mesurementsLimit);
-    // Inizializzo i valori
-    for (var i = 0; i < mesurementsLimit; ++i) {
-        array[i] = { totalTime: 0, idle: 0 };
+function startTimer(index) {
+    if (index === null || index > intervals.length) {
+        return;
     }
-    // Ritorno l'array
-    return array;
-
+    intervals[index].intervalId = setInterval(intervals[index].function, intervals[index].timing);
 }
 
 /**
- * Permette di inizializzare la lista
- * di label per l'asse x che rappresenterà il
- * numero di secondi trascorsi
-*/
+ * Stop the interval, so stop the refreshing
+ * @param {number} index the index the interval
+ */
+function endTimer(index) {
+    if (index === null || index > intervals.length) {
+        return;
+    }
+    clearInterval(intervals[index].intervalId);
+    intervals[index].intervalId = null;
+}
+
+/**
+ * Allow to update the duration of the refresh
+ * @param {number} duration offset timer 
+ * @param {HTMLElement} buttonElement reference to the principal button
+ */
+function refreshIntervalDuration(duration, buttonElement) {
+    for (const property in intervalsIndexes) {
+        intervals[intervalsIndexes[property]].timing = duration;
+        if (intervals[intervalsIndexes[property]].intervalId != null) {
+            endTimer(intervalsIndexes[property]);
+            startTimer(intervalsIndexes[property]);
+        }
+    }
+
+    if (buttonElement != null) {
+        buttonElement.innerHTML = 'REFRESH RATE: ' + duration / 1000 + 's';
+    }
+}
+
+/**
+ * Generate the x label values
+ * @returns a list that contain x labels
+ */
 function getLabel() {
-    // Inizializzo l'array
+    // Create the array
     var labels = new Array();
-    // Inizializzo gli elementi
+    // Inizialize elements
     for (var i = 0; i < mesurementsLimit; ++i) {
         labels.push(mesurementsLimit - i);
     }
-    // Ritorno la lista di labels
+    // Returnt the list
     return labels;
 }
 
 /**
- * Allows to handle CPU usage chart
+ * Allow to initialize the chart and chart data
+ * @param {HTMLElement} canvas the canvas associated to the chart
+ * @param {*} chartData
+ */
+function initChart(canvas, chartData) {
+
+    // Check the integrity
+    if (chartData === null || canvas === null) {
+        return;
+    }
+
+    // Inizialize x labels
+    chartData.xLabels = getLabel();
+    // Inizialize y values
+    chartData.yValues = new Array(mesurementsLimit);
+    for (var i = 0; i < mesurementsLimit; ++i) {
+        chartData.yValues[i] = 0;
+    }
+
+    var data = {
+        labels: chartData.xLabels,
+        datasets: [{
+            label: chartData.title,
+            backgroundColor: chartData.backgroundColor,
+            borderColor: chartData.borderColor,
+            data: chartData.yValues,
+            pointRadius: 0,
+        }]
+    };
+
+    const config = {
+        type: 'line',
+        data: data,
+        options: {
+            fill: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        type: 'linear',
+                        min: 0,
+                        max: 100
+                    }
+                }, x: {
+                    grid: {
+                        offset: true
+                    }
+                }
+
+            }
+        }
+    };
+    chartData.chart = new Chart(
+        canvas,
+        config
+    );
+}
+
+/**
+ * Handle the request to the server and
+ * caluclute the data for the chart
  */
 function manageCpuData() {
     // Creating http request to query cpu usage on server
     const Http = new XMLHttpRequest();
-    const url = `http://${window.location.host}/cpus`;   // --> Request URL
-    
+    const url = `http://${window.location.host}/CPUs`;   // --> Request URL
+
     // Open the connection and send the request
     Http.open('GET', url);
     Http.send();
@@ -160,39 +183,59 @@ function manageCpuData() {
         try {
 
             // Parse the json response
-            var cpu = JSON.parse(Http.responseText), 
+            var cpu = JSON.parse(Http.responseText),
                 absoluteTotal = 0;                  // Absolute total of CPU times in milliseconds
-            
+
             // Accumulate all CPU times
             for (var type in cpu.times) {
                 absoluteTotal += cpu.times[type];
             }
 
-            // Shitf and push data
-            cpuMeasurements.shift();
-            cpuMeasurements.push({ total: absoluteTotal, idle: cpu.times.idle });
+            // Check the mesurements
+            if (cpuData.mesurements === null) {
+                cpuData.mesurements = new Array();
+            }
+
+            // If i have the pool of two element i can shift the data
+            if (cpuData.mesurements.length === 2) {
+                // Shitf data
+                cpuData.mesurements.shift();
+            }
+            // Push the new data
+            cpuData.mesurements.push({ total: absoluteTotal, idle: cpu.times.idle });
 
             // Is the first inserting, don't do anything
-            if (isFirstTime) {
-                isFirstTime = !isFirstTime;
+            if (cpuData.mesurements.length <= 1) {
                 return;
             }
 
             // Total delta CPU time
-            var deltaTotal = cpuMeasurements[cpuMeasurements.length - 1].total - cpuMeasurements[cpuMeasurements.length - 2].total;
+            var deltaTotal = cpuData.mesurements[1].total - cpuData.mesurements[0].total;
             // Total delta idle CPU time
-            var deltaIdle = cpuMeasurements[cpuMeasurements.length - 1].idle - cpuMeasurements[cpuMeasurements.length - 2].idle;
+            var deltaIdle = cpuData.mesurements[1].idle - cpuData.mesurements[0].idle;
             // Real CPU usage in percentage
             var realUsage = 100 - (deltaIdle * 100 / deltaTotal);
 
             // Shift and push data
-            yCPUValue.shift();
-            yCPUValue.push(realUsage);
-            
+            cpuData.yValues.shift();
+            cpuData.yValues.push(realUsage);
+
             // Check if CPU chart is inizialized
-            if (myCPUChart != null) {
-                myCPUChart.data.datasets[0].data = yCPUValue;
-                myCPUChart.update();
+            if (cpuData.chart != null) {
+                cpuData.chart.data.datasets[0].data = cpuData.yValues;
+                cpuData.chart.update();
+            }
+
+            if (cpuData.CPUInfoField != null) {
+                cpuData.CPUInfoField.innerHTML = 'CPU: ' + cpu.model;
+            }
+
+            if (cpuData.usageField != null) {
+                cpuData.usageField.innerHTML = 'Usage: ' + parseFloat(realUsage).toFixed(2) + '%';
+            }
+
+            if (cpuData.idleField != null) {
+                cpuData.idleField.innerHTML = 'Idle: ' + parseFloat(100 - realUsage).toFixed(2) + '%';
             }
         }
         catch (ex) {
@@ -202,11 +245,15 @@ function manageCpuData() {
     }
 }
 
-function manageRAMData(){
+/**
+ * Handle the request to the server and
+ * caluclute the data for the chart
+ */
+function manageRAMData() {
     // Creating http request to query cpu usage on server
     const Http = new XMLHttpRequest();
     const url = `http://${window.location.host}/RAM`;   // --> Request URL
-    
+
     // Open the connection and send the request
     Http.open('GET', url);
     Http.send();
@@ -230,13 +277,25 @@ function manageRAMData(){
             var RAMData = JSON.parse(Http.responseText);
 
             // Shift and push data
-            yRAMValue.shift();
-            yRAMValue.push( 100 - (RAMData.freeMemory * 100 / RAMData.totalAmount));
-            
+            ramData.yValues.shift();
+            ramData.yValues.push(100 - (RAMData.freeMemory * 100 / RAMData.totalAmount));
+
             // Check if CPU chart is inizialized
-            if (myRAMChart != null) {
-                myRAMChart.data.datasets[0].data = yRAMValue;
-                myRAMChart.update();
+            if (ramData.chart != null) {
+                ramData.chart.data.datasets[0].data = ramData.yValues;
+                ramData.chart.update();
+            }
+
+            if (ramData.totalRamField != null) {
+                ramData.totalRamField.innerHTML = 'Total RAM: ' + parseFloat(RAMData.totalAmount / 1073741824).toFixed(2) + 'GB';
+            }
+
+            if (ramData.usedRamField != null) {
+                ramData.usedRamField.innerHTML = 'Used RAM: ' + parseFloat(100 - (RAMData.freeMemory * 100 / RAMData.totalAmount)).toFixed(2) + '%';
+            }
+
+            if (ramData.freeRamField != null) {
+                ramData.freeRamField.innerHTML = 'Free RAM: ' + parseFloat(100 - (100 - (RAMData.freeMemory * 100 / RAMData.totalAmount))).toFixed(2) + '%';
             }
         }
         catch (ex) {
@@ -244,26 +303,4 @@ function manageRAMData(){
             console.log(ex);
         }
     }
-}
-
-function startTimer(index) {
-
-    if (index === null) {
-        return;
-    }
-
-    if (cpuMeasurements === null) {
-        cpuMeasurements = resetCPUMeseraments();
-    }
-    intervals[index].intervalId = setInterval(intervals[index].function, intervals[index].timing);
-
-}
-
-function endTimer(index) {
-
-    if (index === null) {
-        return;
-    }
-
-    clearInterval(intervals[index].intervalId);
 }
