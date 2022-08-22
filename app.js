@@ -5,7 +5,7 @@ const fs = require('fs');
 
 // Costants
 const port = 8882;
-const address = 'localhost';
+const address = '0.0.0.0';  //  --> For docker binding, because 127.0.0.1 bind on container
 
 // Create the server
 const server = http.createServer((req, res) => {
@@ -54,6 +54,7 @@ const server = http.createServer((req, res) => {
     default:
       res.statusCode = 404;
       res.end('Page not found');
+      console.log('Request failed: ', req.url);
       break;
   }
 });
@@ -75,9 +76,10 @@ function loadFile(filePath, response) {
     // Try to open the file
     fs.readFile(filePath, 'utf8', (err, data) => {
       // Check if there is an error
-      if (err != null) {
+      if (err) {
         response.statusCode = 404;
         response.end(JSON.stringify(err));
+        console.log('Load file error: ', err);
       } else {
         response.statusCode = 200;
         response.end(data);
@@ -87,6 +89,7 @@ function loadFile(filePath, response) {
     // Exception generated
     response.statusCode = 404;
     response.end(JSON.stringify(error));
+    console.log('Load file exception: ', err);
   }
 }
 

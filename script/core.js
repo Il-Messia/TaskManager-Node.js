@@ -46,6 +46,12 @@ function startTimer(index) {
     if (index === null || index > intervals.length) {
         return;
     }
+
+    // Tiner already active
+    if(intervals[index].intervalId){
+        return;
+    }
+
     intervals[index].intervalId = setInterval(intervals[index].function, intervals[index].timing);
 }
 
